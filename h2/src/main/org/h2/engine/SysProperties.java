@@ -456,7 +456,7 @@ public class SysProperties {
      * jdbc:h2:./test instead of jdbc:h2:test.
      */
     public static final boolean IMPLICIT_RELATIVE_PATH =
-            Utils.getProperty("h2.implicitRelativePath", false);
+            Utils.getProperty("h2.implicitRelativePath", true);
 
     /**
      * System property <code>h2.urlMap</code> (default: null).<br />

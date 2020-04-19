@@ -142,7 +142,7 @@ public class PgServerThread implements Runnable {
     private void process() throws IOException {
         int x;
         if (initDone) {
-            x = dataInRaw.read();
+            x = dataInRaw.read();//读取包头，代表操作类型
             if (x < 0) {
                 stop = true;
                 return;
@@ -150,11 +150,11 @@ public class PgServerThread implements Runnable {
         } else {
             x = 0;
         }
-        int len = dataInRaw.readInt();
+        int len = dataInRaw.readInt();//读取下次数据包的长度
         len -= 4;
         byte[] data = Utils.newBytes(len);
-        dataInRaw.readFully(data, 0, len);
-        dataIn = new DataInputStream(new ByteArrayInputStream(data, 0, len));
+        dataInRaw.readFully(data, 0, len);//读取整个数据包
+        dataIn = new DataInputStream(new ByteArrayInputStream(data, 0, len));//拷贝到新的数据流中
         switch (x) {
         case 0:
             server.trace("Init");
@@ -253,7 +253,7 @@ public class PgServerThread implements Runnable {
         }
         case 'P': {
             server.trace("Parse");
-            Prepared p = new Prepared();
+            Prepared p = new Prepared();//读取prepared
             p.name = readString();
             p.sql = getSQL(readString());
             int paramTypesCount = readShort();
