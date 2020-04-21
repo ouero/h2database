@@ -302,6 +302,10 @@ public class CommandContainer extends Command {
         return prepared.getType();
     }
 
+    public Prepared getPrepared() {
+        return prepared;
+    }
+
     /**
      * Clean up any associated CTE.
      */

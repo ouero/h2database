@@ -23,6 +23,7 @@ import org.h2.value.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Random;
 
 /**
  * This class is responsible to build the pg_catalog tables.
@@ -65,7 +66,10 @@ public class PgCatalogTable extends MetaTable {
 
     private static final int PG_USER = PG_TYPE + 1;
 
-    private static final int META_TABLE_TYPE_COUNT = PG_USER + 1;
+    private static final int PG_VIEWS = PG_USER + 1;
+
+    private static final int META_TABLE_TYPE_COUNT = PG_VIEWS + 1;
+
 
     /**
      * Get the number of meta table types. Supported meta table types are 0 ..
@@ -152,7 +156,8 @@ public class PgCatalogTable extends MetaTable {
                         "RELHASRULES BOOLEAN", //
                         "RELHASOIDS BOOLEAN", //
                         "RELCHECKS SMALLINT", //
-                        "RELTRIGGERS INTEGER" //
+                        "RELTRIGGERS INTEGER",
+                        "RELFILENODE INTEGER"//
                 );
                 break;
             case PG_DATABASE:
@@ -293,6 +298,13 @@ public class PgCatalogTable extends MetaTable {
                         "USECREATEDB BOOLEAN", //
                         "USESUPER BOOLEAN" //
                 );
+                break;
+            case PG_VIEWS:
+                setMetaTableName("PG_VIEWS");
+                cols = createColumns("SCHEMANAME VARCHAR_IGNORECASE",
+                        "VIEWNAME VARCHAR_IGNORECASE",
+                        "VIEWOWNER VARCHAR_IGNORECASE",
+                        "DEFINITION VARCHAR_IGNORECASE");
                 break;
             default:
                 throw DbException.throwInternalError("type=" + type);
@@ -562,6 +574,8 @@ public class PgCatalogTable extends MetaTable {
                     }
                 }
                 break;
+            case PG_VIEWS:
+                break;
             default:
                 DbException.throwInternalError("type=" + type);
 
@@ -624,7 +638,9 @@ public class PgCatalogTable extends MetaTable {
                 // RELCHECKS
                 ValueSmallint.get((short) 0),
                 // RELTRIGGERS
-                ValueInteger.get(triggers));
+                ValueInteger.get(triggers),
+                //RELFILENODE
+                ValueInteger.get(new Random().nextInt(10000)));
     }
 
     @Override

@@ -286,6 +286,7 @@ public class Build extends BuildBase {
                 File.pathSeparator + "ext/org.osgi.enterprise-" + OSGI_VERSION + ".jar" +
                 File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar" +
                 File.pathSeparator + "ext/asm-" + ASM_VERSION + ".jar" +
+                File.pathSeparator + "ext/opencsv-5.1.jar" +
                 File.pathSeparator + javaToolsJar;
         FileList files;
         if (clientOnly) {
@@ -307,6 +308,7 @@ public class Build extends BuildBase {
         if (version != null) {
             args = args.plus("-target", version, "-source", version);
         }
+        args=args.plus("-encoding","UTF-8");
         javac(args, files);
 
         files = files("src/main/META-INF/services");
@@ -644,7 +646,7 @@ public class Build extends BuildBase {
         compileTools();
         delete("docs");
         mkdir("docs/javadoc");
-        javadoc("-sourcepath", "src/main", "org.h2.jdbc", "org.h2.jdbcx",
+        javadoc("-encoding", "UTF-8","-sourcepath", "src/main", "org.h2.jdbc", "org.h2.jdbcx",
                 "org.h2.tools", "org.h2.api", "org.h2.engine", "org.h2.fulltext",
                 "-classpath",
                 "ext/lucene-core-" + LUCENE_VERSION + ".jar" +
@@ -682,6 +684,7 @@ public class Build extends BuildBase {
                 File.pathSeparator + "ext/org.osgi.enterprise-" + OSGI_VERSION + ".jar" +
                 File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar" +
                 File.pathSeparator + "ext/asm-" + ASM_VERSION + ".jar" +
+                File.pathSeparator + "ext/opencsv-5.1.jar" +
                 File.pathSeparator + "ext/junit-jupiter-api-" + JUNIT_VERSION + ".jar",
                 "-subpackages", "org.h2");
 
@@ -698,6 +701,7 @@ public class Build extends BuildBase {
                 File.pathSeparator + "ext/lucene-queryparser-" + LUCENE_VERSION + ".jar" +
                 File.pathSeparator + "ext/org.osgi.core-" + OSGI_VERSION + ".jar" +
                 File.pathSeparator + "ext/org.osgi.enterprise-" + OSGI_VERSION + ".jar" +
+                File.pathSeparator + "ext/opencsv-5.1.jar" +
                 File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar",
                 "-subpackages", "org.h2.mvstore",
                 "-exclude", "org.h2.mvstore.db");
@@ -717,6 +721,7 @@ public class Build extends BuildBase {
                 File.pathSeparator + "ext/org.osgi.enterprise-" + OSGI_VERSION + ".jar" +
                 File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar" +
                 File.pathSeparator + "ext/asm-" + ASM_VERSION + ".jar" +
+                File.pathSeparator + "ext/opencsv-5.1.jar" +
                 File.pathSeparator + "ext/junit-jupiter-api-" + JUNIT_VERSION + ".jar",
                 "-subpackages", "org.h2",
                 "-package",

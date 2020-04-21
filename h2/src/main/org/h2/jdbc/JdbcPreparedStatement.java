@@ -1778,6 +1778,10 @@ public class JdbcPreparedStatement extends JdbcStatement implements
         }
     }
 
+    public CommandInterface getCommand() {
+        return command;
+    }
+
     /**
      * INTERNAL
      */

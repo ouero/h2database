@@ -1,5 +1,4 @@
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -8,22 +7,27 @@ public class InsertTest {
         Connection c = null;
         PreparedStatement stmt = null;
         try {
-            Class.forName("org.postgresql.Driver");
-            c = DriverManager.getConnection("jdbc:postgresql://2.0.1.55:5435/h2_db2", "sa", "123456");
-            String sql = "insert into  test values (?,?)";
+            c = DbUtil.getConnection();
+            c.setAutoCommit(false);
+            String sql = "insert into  test_black_hole values (?,?)";
             stmt = c.prepareStatement(sql);
-            int i = 1;
-            for (; i <= 1000; i++) {
+            int start = 1;
+            int end = 10_0000;
+            int i = start;
+            long l=System.currentTimeMillis();
+            for (; i <= end; i++) {
                 stmt.setInt(1, i);
                 stmt.setString(2, "jack" + i);
                 stmt.addBatch();
-                if (i != 0 && i % 10 == 0) {
+                if (i != 0 && i % 10000 == 0) {
                     stmt.executeBatch();
                 }
             }
             if (i % 10 != 0) {
                 stmt.executeBatch();
             }
+            c.commit();
+            System.out.println(System.currentTimeMillis()-l);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
