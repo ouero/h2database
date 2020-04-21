@@ -544,6 +544,11 @@ public class PgServerThread implements Runnable {
         sendMessage();
     }
 
+    public void sendPortalSuspended() throws IOException {
+        startMessage('s');
+        sendMessage();
+    }
+
     public void sendDataRow(JdbcResultSet rs, int[] formatCodes) throws IOException, SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
         int columns = metaData.getColumnCount();

@@ -3,6 +3,8 @@ package org.h2.server.pg;
 import com.opencsv.CSVReader;
 import org.h2.command.CommandContainer;
 import org.h2.command.query.Select;
+import org.h2.expression.Expression;
+import org.h2.expression.ValueExpression;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcResultSet;
 
@@ -15,6 +17,8 @@ public class StreamHandler extends CustomHandler {
     public static String STREAM_SUFFIX = "_stream";
 
     private String tableName;
+
+    private long cursor;
 
     public StreamHandler(PgServerThread pgServerThread) {
         super(pgServerThread);
@@ -42,6 +46,12 @@ public class StreamHandler extends CustomHandler {
 //                int maxRows = readShort();
                 int maxRows = pgServerThread.readInt();
                 //bug fix end
+
+                Expression limitExpression = ((Select) ((CommandContainer) prep.getCommand()).getPrepared()).getLimit();
+                long limit = 0;
+                if (limitExpression != null && limitExpression instanceof ValueExpression) {
+                    limit = ((ValueExpression) limitExpression).getValue(null).getLong();
+                }
                 CSVReader reader = null;
                 try {
                     prep.setMaxRows(1);//we only need rs.ResultSetMetaData
@@ -50,10 +60,20 @@ public class StreamHandler extends CustomHandler {
                     try {
                         JdbcResultSet rs = (JdbcResultSet) prep.getResultSet();
                         // the meta-data is sent in the prior 'Describe'
-                        String fileName=tableName + ".csv";
+                        String fileName = tableName + ".csv";
                         reader = new CSVReader(new FileReader(fileName));
+                        long resultRows = 0;
+                        if (maxRows != 0 && limit != 0) {
+                            resultRows = Math.min(maxRows, limit);
+                        } else if (limit != 0) {
+                            resultRows = limit;
+                        } else if (maxRows != 0) {
+                            resultRows = maxRows;
+                        } else {
+                            resultRows = Integer.MAX_VALUE;
+                        }
                         String[] nextLine;
-                        for (int i = 0; i < maxRows; i++) {
+                        for (long i = cursor; i < resultRows; i++) {
                             nextLine = reader.readNext();
                             if (nextLine == null) {
                                 reader.close();
@@ -62,7 +82,11 @@ public class StreamHandler extends CustomHandler {
                             }
                             sendDataRow(rs, p.resultColumnFormat, nextLine);
                         }
-                        pgServerThread.sendCommandComplete(prep, 0);
+                        if(cursor>=resultRows) {
+                            pgServerThread.sendCommandComplete(prep, 0);
+                        }else {
+                            pgServerThread.sendPortalSuspended();
+                        }
                     } catch (Exception e) {
                         pgServerThread.sendErrorResponse(e);
                     }

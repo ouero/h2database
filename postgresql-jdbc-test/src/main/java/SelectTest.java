@@ -10,10 +10,9 @@ public class SelectTest {
         try {
             c = DbUtil.getConnection();
             c.setAutoCommit(false);
-            String sql = "SELECT * from m_hz_czrkjbxx_stream ";
+            String sql = "SELECT * from m_hz_czrkjbxx_stream limit 20000";
             stmt = c.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-            stmt.setFetchSize(2_0000);
-            stmt.setMaxRows(2_0000);
+            stmt.setFetchSize(2);
             ResultSet resultSet = stmt.executeQuery();
             int columnCount = resultSet.getMetaData().getColumnCount();
             for (int i = 1; i <= columnCount; i++) {

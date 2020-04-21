@@ -404,6 +404,9 @@ public class Build extends BuildBase {
         downloadUsingMaven("ext/asm-" + ASM_VERSION + ".jar",
                 "org.ow2.asm", "asm", ASM_VERSION,
                 "fa637eb67eb7628c915d73762b681ae7ff0b9731");
+        downloadUsingMaven("ext/opencsv-5.1.jar",
+                "com.opencsv", "opencsv", "5.1",
+                "fa637eb67eb7628c915d73762b681ae7ff0b9731");
     }
 
     private void downloadOrVerify(String target, String group, String artifact,
@@ -922,7 +925,8 @@ public class Build extends BuildBase {
                     "ext/lucene-core-" + LUCENE_VERSION + ".jar" +
                     File.pathSeparator + "ext/lucene-analyzers-common-" + LUCENE_VERSION + ".jar" +
                     File.pathSeparator + "ext/lucene-queryparser-" + LUCENE_VERSION + ".jar" +
-                    File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar",
+                    File.pathSeparator + "ext/jts-core-" + JTS_VERSION + ".jar"+
+                    File.pathSeparator + "ext/opencsv-5.1.jar",
                     "-docletpath", "bin" + File.pathSeparator + "temp",
                     "-doclet", "org.h2.build.doclet.ResourceDoclet");
         }
@@ -982,6 +986,7 @@ public class Build extends BuildBase {
                 File.pathSeparator + "ext/slf4j-api-" + SLF4J_VERSION + ".jar" +
                 File.pathSeparator + "ext/slf4j-nop-" + SLF4J_VERSION + ".jar" +
                 File.pathSeparator + "ext/asm-" + ASM_VERSION + ".jar" +
+                File.pathSeparator + "ext/opencsv-5.1.jar" +
                 File.pathSeparator + javaToolsJar;
         int version = getJavaVersion();
         if (version >= 9) {
