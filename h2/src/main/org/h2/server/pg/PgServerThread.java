@@ -981,6 +981,7 @@ public class PgServerThread implements Runnable {
                 socket.close();
             }
             server.trace("Close");
+            streamHandler.closeReader();
         } catch (Exception e) {
             server.traceError(e);
         }

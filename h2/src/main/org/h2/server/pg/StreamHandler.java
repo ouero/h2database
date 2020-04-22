@@ -20,6 +20,12 @@ public class StreamHandler extends CustomHandler {
 
     private long cursor;
 
+    private CSVReader reader;
+
+    private JdbcResultSet rs;
+    private long totalResultRows;
+    private String fileName;
+
     public StreamHandler(PgServerThread pgServerThread) {
         super(pgServerThread);
     }
@@ -44,7 +50,7 @@ public class StreamHandler extends CustomHandler {
                 pgServerThread.server.trace(prepared.sql);
                 //this is bug,ref "driver org.postgresql.core.v3.QueryExecutorImpl.sendExecute()"
 //                int maxRows = readShort();
-                int maxRows = pgServerThread.readInt();
+                int fetchSize = pgServerThread.readInt();
                 //bug fix end
 
                 Expression limitExpression = ((Select) ((CommandContainer) prep.getCommand()).getPrepared()).getLimit();
@@ -52,28 +58,27 @@ public class StreamHandler extends CustomHandler {
                 if (limitExpression != null && limitExpression instanceof ValueExpression) {
                     limit = ((ValueExpression) limitExpression).getValue(null).getLong();
                 }
-                CSVReader reader = null;
                 try {
                     prep.setMaxRows(1);//we only need rs.ResultSetMetaData
                     pgServerThread.setActiveRequest(prep);
-                    prep.execute();
+                    if (isFirstSelect()) {
+                        prep.execute();
+                    }
                     try {
-                        JdbcResultSet rs = (JdbcResultSet) prep.getResultSet();
-                        // the meta-data is sent in the prior 'Describe'
-                        String fileName = tableName + ".csv";
-                        reader = new CSVReader(new FileReader(fileName));
-                        long resultRows = 0;
-                        if (maxRows != 0 && limit != 0) {
-                            resultRows = Math.min(maxRows, limit);
-                        } else if (limit != 0) {
-                            resultRows = limit;
-                        } else if (maxRows != 0) {
-                            resultRows = maxRows;
-                        } else {
-                            resultRows = Integer.MAX_VALUE;
+                        if (isFirstSelect()) {
+                            rs = (JdbcResultSet) prep.getResultSet();
+                            fileName = tableName + ".csv";
+                            reader = new CSVReader(new FileReader(fileName));
+                            totalResultRows = 0;
+                            if (limit != 0) {
+                                totalResultRows = limit;
+                            } else {
+                                totalResultRows = 100_0000_0000L;
+                            }
                         }
+                        long thisFetch = Math.min(cursor + fetchSize, totalResultRows);
                         String[] nextLine;
-                        for (long i = cursor; i < resultRows; i++) {
+                        for (; cursor < thisFetch; cursor++) {
                             nextLine = reader.readNext();
                             if (nextLine == null) {
                                 reader.close();
@@ -82,15 +87,18 @@ public class StreamHandler extends CustomHandler {
                             }
                             sendDataRow(rs, p.resultColumnFormat, nextLine);
                         }
-                        if(cursor>=resultRows) {
+                        if (cursor >= totalResultRows) {
+                            closeReader();
                             pgServerThread.sendCommandComplete(prep, 0);
-                        }else {
+                        } else {
                             pgServerThread.sendPortalSuspended();
                         }
                     } catch (Exception e) {
+                        closeReader();
                         pgServerThread.sendErrorResponse(e);
                     }
                 } catch (Exception e) {
+                    closeReader();
                     if (prep.isCancelled()) {
                         pgServerThread.sendCancelQueryResponse();
                     } else {
@@ -98,9 +106,7 @@ public class StreamHandler extends CustomHandler {
                     }
                 } finally {
                     pgServerThread.setActiveRequest(null);
-                    if (reader != null) {
-                        reader.close();
-                    }
+
                 }
                 filtered = true;
                 break;
@@ -108,6 +114,11 @@ public class StreamHandler extends CustomHandler {
         }
         return filtered;
     }
+
+    private boolean isFirstSelect() {
+        return cursor == 0;
+    }
+
 
     @Override
     public void setIsFilter(JdbcPreparedStatement prep) {
@@ -166,4 +177,9 @@ public class StreamHandler extends CustomHandler {
         }
     }
 
+    public void closeReader() throws IOException {
+        if (reader != null) {
+            reader.close();
+        }
+    }
 }
