@@ -5,12 +5,15 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import java.io.IOException;
 
 public abstract class CustomHandler {
-    protected PgServerThread pgServerThread;
+    protected  ReadWriteAble readWriteAble;
 
     protected boolean isFilter;
 
-    public CustomHandler(PgServerThread pgServerThread) {
-        this.pgServerThread = pgServerThread;
+    public CustomHandler(ReadWriteAble readWriteAble) {
+        this.readWriteAble = readWriteAble;
+    }
+
+    protected CustomHandler() {
     }
 
     public boolean isFilter() {
@@ -24,4 +27,5 @@ public abstract class CustomHandler {
     public abstract boolean filter(int x) throws IOException;
 
     public abstract void setIsFilter(JdbcPreparedStatement prep);
+
 }

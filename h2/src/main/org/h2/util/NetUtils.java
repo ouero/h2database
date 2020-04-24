@@ -221,6 +221,11 @@ public class NetUtils {
     public static boolean isLocalAddress(Socket socket)
             throws UnknownHostException {
         InetAddress test = socket.getInetAddress();
+        return isLocalAddress(test);
+    }
+
+    public static boolean isLocalAddress(InetAddress test)
+            throws UnknownHostException {
         if (test.isLoopbackAddress()) {
             return true;
         }

@@ -10,25 +10,27 @@ import org.h2.jdbc.JdbcResultSet;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 public class StreamHandler extends CustomHandler {
     public static String STREAM_SUFFIX = "_stream";
 
-    private String tableName;
+    protected String tableName;
 
-    private long cursor;
+    protected long cursor;
 
-    private CSVReader reader;
+    protected CSVReader reader;
 
-    private JdbcResultSet rs;
-    private long totalResultRows;
-    private String fileName;
+    protected JdbcResultSet rs;
+    protected long totalResultRows;
+    protected String fileName;
 
-    public StreamHandler(PgServerThread pgServerThread) {
-        super(pgServerThread);
+    public StreamHandler(ReadWriteAble readWriteAble) {
+        super(readWriteAble);
     }
+
 
     @Override
     public boolean filter(int x) throws IOException {
@@ -38,19 +40,17 @@ public class StreamHandler extends CustomHandler {
         boolean filtered = false;
         switch (x) {
             case 'E': {
-                String name = pgServerThread.readString();
-                pgServerThread.server.trace("Execute");
-                PgServerThread.Portal p = pgServerThread.portals.get(name);
+                String name = readWriteAble.readString();
+                Portal p = readWriteAble.getPortal(name);
                 if (p == null) {
-                    pgServerThread.sendErrorResponse("Portal not found: " + name);
+                    readWriteAble.sendErrorResponse("Portal not found: " + name);
                     break;
                 }
-                PgServerThread.Prepared prepared = p.prep;
+                Prepared prepared = p.prep;
                 JdbcPreparedStatement prep = prepared.prep;
-                pgServerThread.server.trace(prepared.sql);
                 //this is bug,ref "driver org.postgresql.core.v3.QueryExecutorImpl.sendExecute()"
 //                int maxRows = readShort();
-                int fetchSize = pgServerThread.readInt();
+                int fetchSize = readWriteAble.readInt();
                 //bug fix end
 
                 Expression limitExpression = ((Select) ((CommandContainer) prep.getCommand()).getPrepared()).getLimit();
@@ -60,7 +60,7 @@ public class StreamHandler extends CustomHandler {
                 }
                 try {
                     prep.setMaxRows(1);//we only need rs.ResultSetMetaData
-                    pgServerThread.setActiveRequest(prep);
+                    readWriteAble.setActiveRequest(prep);
                     if (isFirstSelect()) {
                         prep.execute();
                     }
@@ -89,23 +89,23 @@ public class StreamHandler extends CustomHandler {
                         }
                         if (cursor >= totalResultRows) {
                             closeReader();
-                            pgServerThread.sendCommandComplete(prep, 0);
+                            readWriteAble.sendCommandComplete(prep, 0);
                         } else {
-                            pgServerThread.sendPortalSuspended();
+                            readWriteAble.sendPortalSuspended();
                         }
                     } catch (Exception e) {
                         closeReader();
-                        pgServerThread.sendErrorResponse(e);
+                        readWriteAble.sendErrorResponse(e);
                     }
                 } catch (Exception e) {
                     closeReader();
                     if (prep.isCancelled()) {
-                        pgServerThread.sendCancelQueryResponse();
+                        readWriteAble.sendCancelQueryResponse();
                     } else {
-                        pgServerThread.sendErrorResponse(e);
+                        readWriteAble.sendErrorResponse(e);
                     }
                 } finally {
-                    pgServerThread.setActiveRequest(null);
+                    readWriteAble.setActiveRequest(null);
 
                 }
                 filtered = true;
@@ -115,7 +115,7 @@ public class StreamHandler extends CustomHandler {
         return filtered;
     }
 
-    private boolean isFirstSelect() {
+    protected boolean isFirstSelect() {
         return cursor == 0;
     }
 
@@ -140,37 +140,35 @@ public class StreamHandler extends CustomHandler {
     public void sendDataRow(JdbcResultSet rs, int[] formatCodes, String[] nextLine) throws IOException, SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
         int columns = metaData.getColumnCount();
-        pgServerThread.startMessage('D');
-        pgServerThread.writeShort(columns);
+        readWriteAble.startMessage('D');
+        readWriteAble.writeShort(columns);
         for (int i = 1; i <= columns; i++) {
             int pgType = PgServer.convertType(metaData.getColumnType(i));
-            boolean text = pgServerThread.formatAsText(pgType, formatCodes, i - 1);
+            boolean text = readWriteAble.formatAsText(pgType, formatCodes, i - 1);
             writeDataColumn(nextLine, i, pgType, text);
         }
-        pgServerThread.sendMessage();
+        readWriteAble.sendMessage();
     }
 
 
     public void writeDataColumn(String[] nextline, int column, int pgType, boolean text) throws IOException {
         String v = nextline[column - 1];
         if (v == null || v.isEmpty()) {
-            pgServerThread.writeInt(-1);
+            readWriteAble.writeInt(-1);
             return;
         }
         if (text) {
             // plain text
             switch (pgType) {
                 case PgServer.PG_TYPE_BOOL:
-                    pgServerThread.writeInt(1);
-                    pgServerThread.dataOut.writeByte(v.equalsIgnoreCase("TRUE") ? 't' : 'f');
-                    break;
+                    throw new IllegalStateException("unsupport data type PG_TYPE_BOOL");
                 case PgServer.PG_TYPE_BYTEA: {
                     throw new IllegalStateException("unsupport data type PG_TYPE_BYTEA");
                 }
                 default:
-                    byte[] data = v.getBytes(pgServerThread.getEncoding());
-                    pgServerThread.writeInt(data.length);
-                    pgServerThread.write(data);
+                    byte[] data = v.getBytes(readWriteAble.getEncoding());
+                    readWriteAble.writeInt(data.length);
+                    readWriteAble.write(data);
             }
         } else {
             throw new IllegalStateException("unsupport data type");
@@ -182,4 +180,5 @@ public class StreamHandler extends CustomHandler {
             reader.close();
         }
     }
+
 }

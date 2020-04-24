@@ -9,7 +9,7 @@ public class InsertTest {
         try {
             c = DbUtil.getConnection();
             c.setAutoCommit(false);
-            String sql = "insert into  test_black_hole values (?,?)";
+            String sql = "insert into  test values (?,?)";
             stmt = c.prepareStatement(sql);
             int start = 1;
             int end = 10_0000;

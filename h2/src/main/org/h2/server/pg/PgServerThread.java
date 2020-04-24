@@ -29,7 +29,7 @@ import java.util.Properties;
 /**
  * One server thread is opened for each client.
  */
-public class PgServerThread implements Runnable {
+public class PgServerThread implements Runnable, ReadWriteAble {
     private static final boolean INTEGER_DATE_TYPES = false;
 
     public final PgServer server;
@@ -581,7 +581,7 @@ public class PgServerThread implements Runnable {
             switch (pgType) {
                 case PgServer.PG_TYPE_BOOL:
                     writeInt(1);
-                    dataOut.writeByte(v.getBoolean() ? 't' : 'f');
+                    writeByte(v.getBoolean() ? 't' : 'f');
                     break;
                 case PgServer.PG_TYPE_BYTEA: {
                     byte[] bytes = v.getBytesNoCopy();
@@ -901,7 +901,7 @@ public class PgServerThread implements Runnable {
      * @param column      0-based column number
      * @return true for text
      */
-    public static boolean formatAsText(int pgType, int[] formatCodes, int column) {
+    public boolean formatAsText(int pgType, int[] formatCodes, int column) {
         boolean text = true;
         if (formatCodes != null && formatCodes.length > 0) {
             if (formatCodes.length == 1) {
@@ -1058,6 +1058,10 @@ public class PgServerThread implements Runnable {
         dataOut.writeShort(i);
     }
 
+    public void writeByte(char c) throws IOException {
+        dataOut.writeByte(c);
+    }
+
     public void write(byte[] data) throws IOException {
         dataOut.write(data);
     }
@@ -1066,6 +1070,7 @@ public class PgServerThread implements Runnable {
         dataOut.write(b);
     }
 
+    @Override
     public void startMessage(int newMessageType) {
         this.messageType = newMessageType;
         outBuffer = new ByteArrayOutputStream();
@@ -1125,50 +1130,8 @@ public class PgServerThread implements Runnable {
         }
     }
 
-    /**
-     * Represents a PostgreSQL Prepared object.
-     */
-    static class Prepared {
 
-        /**
-         * The object name.
-         */
-        String name;
-
-        /**
-         * The SQL statement.
-         */
-        String sql;
-
-        /**
-         * The prepared statement.
-         */
-        JdbcPreparedStatement prep;
-
-        /**
-         * The list of parameter types (if set).
-         */
-        int[] paramType;
-    }
-
-    /**
-     * Represents a PostgreSQL Portal object.
-     */
-    static class Portal {
-
-        /**
-         * The portal name.
-         */
-        String name;
-
-        /**
-         * The format used in the result set columns (if set).
-         */
-        int[] resultColumnFormat;
-
-        /**
-         * The prepared object.
-         */
-        Prepared prep;
+    public Portal getPortal(String name) {
+        return portals.get(name);
     }
 }

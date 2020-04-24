@@ -98,6 +98,13 @@
       <artifactId>jts-core</artifactId>
       <version>${jts.version}</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/io.netty/netty-buffer -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+      <version>4.1.48.Final</version>
+    </dependency>
+
     <!-- END COMPILE DEPENDENCIES !-->
 
 

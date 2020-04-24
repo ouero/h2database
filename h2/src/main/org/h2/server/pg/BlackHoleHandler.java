@@ -10,9 +10,10 @@ import java.io.IOException;
 public class BlackHoleHandler extends CustomHandler {
     public static String BLACK_HOLE_SUFFIX = "black_hole";
 
-    public BlackHoleHandler(PgServerThread pgServerThread) {
-        super(pgServerThread);
+    public BlackHoleHandler(ReadWriteAble readWriteAble) {
+        super(readWriteAble);
     }
+
 
     @Override
     public boolean filter(int x) throws IOException {
@@ -22,16 +23,16 @@ public class BlackHoleHandler extends CustomHandler {
         boolean filtered = false;
         switch (x) {
             case 'B':
-                pgServerThread.sendBindComplete();
+                readWriteAble.sendBindComplete();
                 filtered = true;
                 break;
             case 'D':
-                pgServerThread.sendNoData();
+                readWriteAble.sendNoData();
                 filtered = true;
                 break;
             case 'E':
                 //if insert black hole,do not real handle data,direct return true
-                pgServerThread.sendCommandComplete(CommandInterface.INSERT, 1);
+                readWriteAble.sendCommandComplete(CommandInterface.INSERT, 1);
                 filtered = true;
                 break;
         }
