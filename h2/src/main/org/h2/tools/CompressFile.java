@@ -40,7 +40,7 @@ public class CompressFile {
                 short length = sendMessage();
                 indexOut.writeShort(length);
                 nextLine = reader.readNext();
-                if (++x % 1000 == 0) {
+                if (++x % 10000 == 0) {
                     System.out.println("complete " + x);
                 }
             }

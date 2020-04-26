@@ -81,7 +81,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
             oneByteBuffer = ByteBuffer.allocate(1);
             intBuffer = ByteBuffer.allocate(4);
             shortBuffer = ByteBuffer.allocate(2);
-            contentBuffer = ByteBuffer.allocateDirect(1024);
+            contentBuffer = ByteBuffer.allocateDirect(1024 * 500);
             while (!stop) {
                 process();
 //                out.flush();//channel did not flush
@@ -471,11 +471,11 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
 
     private ByteBuffer readLengthBuffer(SocketChannel socketChannel, ByteBuffer buffer, int len, long timeOut) throws IOException {
         if (len > buffer.capacity()) {
-            throw new IOException("to read data length is more than buffer size");
+            throw new IOException("to read data length [" + len + "] is more than buffer size [" + buffer.capacity() + "]");
         }
         buffer.clear();
         buffer.position(buffer.capacity() - len);
-        readUntilFull(socketChannel, buffer, TIME_OUT);
+        readUntilFull(socketChannel, buffer, timeOut);
         return buffer;
     }
 
@@ -882,7 +882,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 socketChannel.close();
             }
             server.trace("Close");
-            streamHandler.closeReader();
+            streamHandler.close();
         } catch (Exception e) {
             server.traceError(e);
         }

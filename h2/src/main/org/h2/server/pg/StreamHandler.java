@@ -10,7 +10,6 @@ import org.h2.jdbc.JdbcResultSet;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
@@ -88,17 +87,17 @@ public class StreamHandler extends CustomHandler {
                             sendDataRow(rs, p.resultColumnFormat, nextLine);
                         }
                         if (cursor >= totalResultRows) {
-                            closeReader();
+                            close();
                             readWriteAble.sendCommandComplete(prep, 0);
                         } else {
                             readWriteAble.sendPortalSuspended();
                         }
                     } catch (Exception e) {
-                        closeReader();
+                        close();
                         readWriteAble.sendErrorResponse(e);
                     }
                 } catch (Exception e) {
-                    closeReader();
+                    close();
                     if (prep.isCancelled()) {
                         readWriteAble.sendCancelQueryResponse();
                     } else {
@@ -137,7 +136,7 @@ public class StreamHandler extends CustomHandler {
         return prep.getCommand() instanceof CommandContainer && ((CommandContainer) prep.getCommand()).getPrepared() instanceof Select;
     }
 
-    public void sendDataRow(JdbcResultSet rs, int[] formatCodes, String[] nextLine) throws IOException, SQLException {
+    private void sendDataRow(JdbcResultSet rs, int[] formatCodes, String[] nextLine) throws IOException, SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
         int columns = metaData.getColumnCount();
         readWriteAble.startMessage('D');
@@ -151,7 +150,7 @@ public class StreamHandler extends CustomHandler {
     }
 
 
-    public void writeDataColumn(String[] nextline, int column, int pgType, boolean text) throws IOException {
+    private void writeDataColumn(String[] nextline, int column, int pgType, boolean text) throws IOException {
         String v = nextline[column - 1];
         if (v == null || v.isEmpty()) {
             readWriteAble.writeInt(-1);
@@ -175,7 +174,7 @@ public class StreamHandler extends CustomHandler {
         }
     }
 
-    public void closeReader() throws IOException {
+    public void close() throws IOException {
         if (reader != null) {
             reader.close();
         }

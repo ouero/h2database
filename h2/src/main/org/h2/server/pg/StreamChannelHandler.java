@@ -1,6 +1,5 @@
 package org.h2.server.pg;
 
-import com.opencsv.CSVReader;
 import org.h2.command.CommandContainer;
 import org.h2.command.query.Select;
 import org.h2.expression.Expression;
@@ -11,10 +10,7 @@ import org.h2.jdbc.JdbcResultSet;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 
 public class StreamChannelHandler extends StreamHandler {
@@ -23,9 +19,9 @@ public class StreamChannelHandler extends StreamHandler {
     private RandomAccessFile randomAccessFile;
     private FileChannel channel;
     private Queue<FilePosition> indexQueue = new LinkedList();
-    private int indexQueueSize = 50;//[0,1233,1567,2328]
+    private int indexQueueSize = 50;
     String indexName;
-    private long currentIndexPosition =0;
+    private long currentIndexPosition = 0;
 
     public StreamChannelHandler(ReadWriteAble readWriteAble) {
         super(readWriteAble);
@@ -87,32 +83,32 @@ public class StreamChannelHandler extends StreamHandler {
                                         aShort = indexIn.readShort();
                                     } catch (EOFException e) {
                                         indexIn = new DataInputStream(new FileInputStream(indexName));
-                                        currentIndexPosition=0;
+                                        currentIndexPosition = 0;
                                         aShort = indexIn.readShort();
                                     }
                                     batchlength = batchlength + aShort + 32768;
                                 }
-                                FilePosition filePosition=new FilePosition(currentIndexPosition,batchlength);
-                                currentIndexPosition=currentIndexPosition+batchlength;
+                                FilePosition filePosition = new FilePosition(currentIndexPosition, batchlength);
+                                currentIndexPosition = currentIndexPosition + batchlength;
                                 indexQueue.add(filePosition);
                             }
                         }
                         long thisFetch = Math.min(cursor + fetchSize, totalResultRows);
                         FilePosition filePosition = indexQueue.poll();
-                        channel.transferTo(filePosition.position,filePosition.len,socketChannel);
-                        cursor=cursor+fetchSize;
+                        channel.transferTo(filePosition.position, filePosition.len, socketChannel);
+                        cursor = cursor + fetchSize;
                         if (cursor >= totalResultRows) {
-                            closeReader();
+                            close();
                             readWriteAble.sendCommandComplete(prep, 0);
                         } else {
                             readWriteAble.sendPortalSuspended();
                         }
                     } catch (Exception e) {
-                        closeReader();
+                        close();
                         readWriteAble.sendErrorResponse(e);
                     }
                 } catch (Exception e) {
-                    closeReader();
+                    close();
                     if (prep.isCancelled()) {
                         readWriteAble.sendCancelQueryResponse();
                     } else {
@@ -145,18 +141,8 @@ public class StreamChannelHandler extends StreamHandler {
     }
 
     @Override
-    public void sendDataRow(JdbcResultSet rs, int[] formatCodes, String[] nextLine) throws IOException, SQLException {
-        //do nothing
-    }
-
-    @Override
-    public void writeDataColumn(String[] nextline, int column, int pgType, boolean text) throws IOException {
-        //do nothing
-    }
-
-    @Override
-    public void closeReader() throws IOException {
-        super.closeReader();
+    public void close() throws IOException {
+        super.close();
         if (randomAccessFile != null) {
             randomAccessFile.close();
         }
@@ -169,7 +155,7 @@ public class StreamChannelHandler extends StreamHandler {
         this.socketChannel = socketChannel;
     }
 
-    static class FilePosition{
+    static class FilePosition {
         long position;
         long len;
 
