@@ -22,6 +22,10 @@ public class BlackHoleHandler extends CustomHandler {
         }
         boolean filtered = false;
         switch (x) {
+            case 'P':
+                readWriteAble.sendParseComplete();
+                filtered = true;
+                break;
             case 'B':
                 readWriteAble.sendBindComplete();
                 filtered = true;
@@ -33,6 +37,10 @@ public class BlackHoleHandler extends CustomHandler {
             case 'E':
                 //if insert black hole,do not real handle data,direct return true
                 readWriteAble.sendCommandComplete(CommandInterface.INSERT, 1);
+                filtered = true;
+                break;
+            case 'C':
+                readWriteAble.sendCloseComplete();
                 filtered = true;
                 break;
         }

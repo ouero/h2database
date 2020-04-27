@@ -937,7 +937,7 @@ public class PgServerThread implements Runnable, ReadWriteAble {
         sendMessage();
     }
 
-    private void sendParseComplete() throws IOException {
+    public void sendParseComplete() throws IOException {
         startMessage('1');
         sendMessage();
     }
@@ -947,7 +947,7 @@ public class PgServerThread implements Runnable, ReadWriteAble {
         sendMessage();
     }
 
-    private void sendCloseComplete() throws IOException {
+    public void sendCloseComplete() throws IOException {
         startMessage('3');
         sendMessage();
     }

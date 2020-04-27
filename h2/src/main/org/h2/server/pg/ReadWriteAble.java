@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 public interface ReadWriteAble {
+    void sendParseComplete() throws IOException;
+
     void sendBindComplete() throws IOException;
 
     void sendNoData() throws IOException;
@@ -46,4 +48,6 @@ public interface ReadWriteAble {
     String readString() throws IOException;
 
     void writeByte(char aTrue) throws IOException;
+
+    void sendCloseComplete() throws IOException;
 }

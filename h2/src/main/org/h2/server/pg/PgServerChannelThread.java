@@ -25,6 +25,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
@@ -34,7 +35,7 @@ import java.util.Properties;
  */
 public class PgServerChannelThread implements ReadWriteAble, Runnable {
     private static final boolean INTEGER_DATE_TYPES = false;
-    public static final int TIME_OUT = 3000;
+    public static final int TIME_OUT = 10000;
 
     public final PgChannelServer server;
     private SocketChannel socketChannel;
@@ -55,7 +56,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
     private JdbcStatement activeRequest;
     private String clientEncoding = SysProperties.PG_DEFAULT_CLIENT_ENCODING;
     private String dateStyle = "ISO, MDY";
-    private final HashMap<String, Prepared> prepared =
+    private final HashMap<String, Prepared> preparedMap =
             new CaseInsensitiveMap<>();
     public final HashMap<String, Portal> portals =
             new CaseInsensitiveMap<>();
@@ -107,7 +108,9 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
             oneByteBuffer.flip();
             x = oneByteBuffer.get();
             oneByteBuffer.clear();
-//            System.out.println(LocalDateTime.now().toString() + " " + (char) x);
+            if ("1".equals(System.getProperty("debug", "0"))) {
+                System.out.println(LocalDateTime.now().toString() + " " + (char) x);
+            }
             if (x < 0) {
                 stop = true;
                 return;
@@ -267,10 +270,12 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                         }
                         p.paramType[i] = type;
                     }
-                    prepared.put(p.name, p);
+                    preparedMap.put(p.name, p);
                     sendParseComplete();
                 } catch (Exception e) {
-                    sendErrorResponse(e);
+                    e.printStackTrace();
+//                    sendErrorResponse(e);
+                    sendParseComplete();
                 }
                 break;
             }
@@ -279,7 +284,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 Portal portal = new Portal();
                 portal.name = readString();
                 String prepName = readString();
-                Prepared prep = prepared.get(prepName);
+                Prepared prep = preparedMap.get(prepName);
                 if (prep == null) {
                     sendErrorResponse("Prepared not found");
                     break;
@@ -297,6 +302,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                         setParameter(prep.prep, prep.paramType[i], i, formatCodes);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                     sendErrorResponse(e);
                     break;
                 }
@@ -313,7 +319,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 String name = readString();
                 server.trace("Close");
                 if (type == 'S') {
-                    Prepared p = prepared.remove(name);
+                    Prepared p = preparedMap.remove(name);
                     if (p != null) {
                         JdbcUtils.closeSilently(p.prep);
                     }
@@ -332,7 +338,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 String name = readString();
                 server.trace("Describe");
                 if (type == 'S') {
-                    Prepared p = prepared.get(name);
+                    Prepared p = preparedMap.get(name);
                     if (p == null) {
                         sendErrorResponse("Prepared not found: " + name);
                     } else {
@@ -340,6 +346,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                             sendParameterDescription(p.prep.getParameterMetaData(), p.paramType);
                             sendRowDescription(p.prep.getMetaData(), null);
                         } catch (Exception e) {
+                            e.printStackTrace();
                             sendErrorResponse(e);
                         }
                     }
@@ -353,6 +360,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                             ResultSetMetaData meta = prep.getMetaData();
                             sendRowDescription(meta, p.resultColumnFormat);
                         } catch (Exception e) {
+                            e.printStackTrace();
                             sendErrorResponse(e);
                         }
                     }
@@ -390,6 +398,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                             }
                             sendCommandComplete(prep, 0);
                         } catch (Exception e) {
+                            e.printStackTrace();
                             sendErrorResponse(e);
                         }
                     } else {
@@ -397,6 +406,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                     }
 
                 } catch (Exception e) {
+                    e.printStackTrace();
                     if (prep.isCancelled()) {
                         sendCancelQueryResponse();
                     } else {
@@ -437,6 +447,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                                 }
                                 sendCommandComplete(stat, 0);
                             } catch (Exception e) {
+                                e.printStackTrace();
                                 sendErrorResponse(e);
                                 break;
                             }
@@ -444,6 +455,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                             sendCommandComplete(stat, stat.getUpdateCount());
                         }
                     } catch (SQLException e) {
+                        e.printStackTrace();
                         if (stat != null && stat.isCancelled()) {
                             sendCancelQueryResponse();
                         } else {
@@ -838,7 +850,8 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
         sendMessage();
     }
 
-    private void sendParseComplete() throws IOException {
+    @Override
+    public void sendParseComplete() throws IOException {
         startMessage('1');
         sendMessage();
     }
@@ -848,7 +861,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
         sendMessage();
     }
 
-    private void sendCloseComplete() throws IOException {
+    public void sendCloseComplete() throws IOException {
         startMessage('3');
         sendMessage();
     }
@@ -884,6 +897,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
             server.trace("Close");
             streamHandler.close();
         } catch (Exception e) {
+            e.printStackTrace();
             server.traceError(e);
         }
         conn = null;
@@ -1069,6 +1083,7 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 activeRequest.cancel();
                 activeRequest = null;
             } catch (SQLException e) {
+                e.printStackTrace();
                 throw DbException.convert(e);
             }
         }
