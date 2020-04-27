@@ -35,7 +35,7 @@ import java.util.Properties;
  */
 public class PgServerChannelThread implements ReadWriteAble, Runnable {
     private static final boolean INTEGER_DATE_TYPES = false;
-    public static final int TIME_OUT = 10000;
+    public long TIME_OUT = Long.parseLong(System.getProperty("readTimeOut", "3000"));
 
     public final PgChannelServer server;
     private SocketChannel socketChannel;
