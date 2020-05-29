@@ -297,8 +297,9 @@ public class Build extends BuildBase {
             files = files("src/main");
         }
         StringList args = args();
+        System.out.println(debugInfo);
         if (debugInfo) {
-            args = args.plus("-Xlint:unchecked",
+            args = args.plus("-Xlint:unchecked","-g",
                     "-d", "temp", "-sourcepath", "src/main", "-classpath", classpath);
         } else {
             args = args.plus("-Xlint:unchecked", "-g:none",
@@ -406,7 +407,7 @@ public class Build extends BuildBase {
                 "fa637eb67eb7628c915d73762b681ae7ff0b9731");
         downloadUsingMaven("ext/opencsv-5.1.jar",
                 "com.opencsv", "opencsv", "5.1",
-                "fa637eb67eb7628c915d73762b681ae7ff0b9731");
+                "4f70102f489ccb029da45816a10eb89e65c53af4");
     }
 
     private void downloadOrVerify(String target, String group, String artifact,

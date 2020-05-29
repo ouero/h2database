@@ -104,7 +104,8 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
         int x;
         if (initDone) {
             oneByteBuffer.clear();
-            socketChannel.read(oneByteBuffer);//read the head,this is the command type
+            readUntilFull(socketChannel, oneByteBuffer, TIME_OUT * 10);
+            //socketChannel.read(oneByteBuffer);//read the head,this is the command type
             oneByteBuffer.flip();
             x = oneByteBuffer.get();
             oneByteBuffer.clear();
@@ -286,7 +287,8 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 String prepName = readString();
                 Prepared prep = preparedMap.get(prepName);
                 if (prep == null) {
-                    sendErrorResponse("Prepared not found");
+                    sendBindComplete();//fix to run black_hole
+//                    sendErrorResponse("Prepared not found");
                     break;
                 }
                 portal.prep = prep;
@@ -375,7 +377,8 @@ public class PgServerChannelThread implements ReadWriteAble, Runnable {
                 server.trace("Execute");
                 Portal p = portals.get(name);
                 if (p == null) {
-                    sendErrorResponse("Portal not found: " + name);
+                    sendCommandComplete(CommandInterface.BEGIN, 0);//fix for back_hole
+//                    sendErrorResponse("Portal not found: " + name);
                     break;
                 }
                 Prepared prepared = p.prep;
